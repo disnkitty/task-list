@@ -1,55 +1,16 @@
-import { useState } from 'react';
+import { useContext, useState } from 'react';
+import TaskForm from './TaskForm';
+import TaskList from './TaskList';
+import CompletedTaskList from './CompletedTaskList';
+import Footer from './Footer';
+import { TasksContext } from './TaskProvider';
+
 function App() {
+  const { sortType, sortOrder, toggleSortOrder } = useContext(TasksContext);
   const [isActiveFirstPlus, setIsActiveFirstPlus] = useState(false);
   const [isActiveSecondPlus, setIsActiveSecondPlus] = useState(false);
   const [isActiveThirdPlus, setIsActiveThirdPlus] = useState(false);
-  const [tasks, setTasks] = useState([]);
 
-  const [sortType, setSortType] = useState('date');
-  const [sortOrder, setSortOrder] = useState('asc');
-
-  //kс
-  function toggleSortOrder(type) {
-    if (sortType === type) {
-      setSortOrder((sortOrder) => ((sortOrder === 'asc') ? 'desc' : 'asc'));
-    } else {
-      setSortType(type);
-      setSortOrder('asc');
-    }
-  }
-
-  function sortTask(tasks) {
-    return tasks.slice().sort((a, b) => {
-      if (sortType === 'priority') {
-        const priorityOrder = { High: 1, Medium: 2, Low: 3 };
-        return sortOrder === 'asc'
-          ? priorityOrder[a.priority] - priorityOrder[b.priority]
-          : priorityOrder[b.priority] - priorityOrder[a.priority];
-      } else {
-        return sortOrder === 'asc'
-          ? new Date(a.deadline) - new Date(b.deadline)
-          : new Date(b.deadline) - new Date(a.deadline);
-      }
-    });
-  }
-
-  function addTask(task) {
-    setTasks([...tasks, { ...task, completed: false, id: Date.now() }]);
-  }
-
-  function deleteTask(id) {
-    setTasks((tasks) => tasks.filter((task) => task.id !== id));
-  }
-  function completeTask(id) {
-    setTasks(
-      tasks.map((task) =>
-        task.id === id ? { ...task, completed: true } : task,
-      ),
-    );
-  }
-
-  const completedTasks = tasks.filter((t) => t.completed);
-  const activeTasks = sortTask(tasks.filter((t) => !t.completed));
   return (
     <div className="app">
       <div className="task-container">
@@ -60,7 +21,7 @@ function App() {
         >
           +
         </button>
-        {isActiveFirstPlus && <TaskForm addTask={addTask} />}
+        {isActiveFirstPlus && <TaskForm />}
       </div>
 
       <div className="task-container">
@@ -76,22 +37,19 @@ function App() {
             className={`sort-button ${sortType === 'date' && 'active'}`}
             onClick={() => toggleSortOrder('date')}
           >
-            By Date {sortType === 'date' && (sortOrder === 'asc' ? '\u2191' : '\u2193')}
+            By Date{' '}
+            {sortType === 'date' && (sortOrder === 'asc' ? '\u2191' : '\u2193')}
           </button>
           <button
             className={`sort-button ${sortType === 'priority' && 'active'}`}
             onClick={() => toggleSortOrder('priority')}
           >
-            By Priority  {sortType === 'priority' && (sortOrder === 'asc' ? '\u2191' : '\u2193')}
+            By Priority{' '}
+            {sortType === 'priority' &&
+              (sortOrder === 'asc' ? '\u2191' : '\u2193')}
           </button>
         </div>
-        {isActiveSecondPlus && (
-          <TaskList
-            deleteTask={deleteTask}
-            completeTask={completeTask}
-            activeTasks={activeTasks}
-          />
-        )}
+        {isActiveSecondPlus && <TaskList />}
       </div>
 
       <div className="completed-task-container">
@@ -102,12 +60,7 @@ function App() {
         >
           +
         </button>
-        {isActiveThirdPlus && (
-          <CompletedTaskList
-            completedTasks={completedTasks}
-            deleteTask={deleteTask}
-          />
-        )}
+        {isActiveThirdPlus && <CompletedTaskList />}
       </div>
 
       <Footer />
@@ -115,108 +68,4 @@ function App() {
   );
 }
 
-function TaskForm({ addTask }) {
-  const [title, setTitle] = useState('');
-  const [priority, setPriority] = useState('Low');
-  const [deadline, setDeadline] = useState('');
-  function handleSubmit(e) {
-    e.preventDefault();
-    if (title.trim() && deadline) {
-      addTask({ title, priority, deadline });
-      setTitle('');
-      setPriority('Low');
-      setDeadline('');
-    }
-  }
-
-  return (
-    <form action="" className="task-form" onSubmit={handleSubmit}>
-      <input
-        type="text"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        placeholder="Your task..."
-        required
-      />
-      <select value={priority} onChange={(e) => setPriority(e.target.value)}>
-        <option value={'High'}>High</option>
-        <option value={'Medium'}>Medium</option>
-        <option value={'Low'}>Low</option>
-      </select>
-
-      <input
-        type="datetime-local"
-        required
-        value={deadline}
-        onChange={(e) => setDeadline(e.target.value)}
-      />
-      <button type="submit">Add task</button>
-    </form>
-  );
-}
-
-function TaskList({ activeTasks, deleteTask, completeTask }) {
-  return (
-    <ul className="task-list">
-      {activeTasks.map((task) => (
-        <TaskItem
-          key={task.id}
-          task={task}
-          deleteTask={deleteTask}
-          completeTask={completeTask}
-        />
-      ))}
-    </ul>
-  );
-}
-
-function CompletedTaskList({ completedTasks, deleteTask }) {
-  return (
-    <ul className="completed-task-list">
-      {completedTasks.map((task) => (
-        <TaskItem key={task.id} task={task} deleteTask={deleteTask} />
-      ))}
-    </ul>
-  );
-}
-
-function TaskItem({ task, deleteTask, completeTask }) {
-  const { title, priority, deadline, id, completed } = task;
-
-  return (
-    <li
-      className={`task-item ${(priority === 'Low' && 'low') || (priority === 'Medium' && 'medium') || (priority === 'High' && 'high')}`}
-    >
-      <div className="task-info">
-        <div>
-          {title} <strong> {priority}</strong>{' '}
-        </div>
-        <div className="task-deadline">Due: {deadline}</div>
-      </div>
-      <div className="task-buttons">
-        {completed === false && (
-          <button className="complete-button" onClick={() => completeTask(id)}>
-            Complete
-          </button>
-        )}
-
-        <button className="delete-button" onClick={() => deleteTask(id)}>
-          Delete
-        </button>
-      </div>
-    </li>
-  );
-}
-
-function Footer() {
-  return (
-    <footer className="footer">
-      <p>
-        Technologies and React concepts used: React, JSX, props, useState,
-        component composition, conditional rendering, array methods (map,
-        filter), event handling.
-      </p>
-    </footer>
-  );
-}
 export default App;

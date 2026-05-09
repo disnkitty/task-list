@@ -1,0 +1,266 @@
+App.jsximport { useContext, useState } from 'react';
+import TaskForm from './TaskForm';
+import TaskList from './TaskList';
+import CompletedTaskList from './CompletedTaskList';
+import Footer from './Footer';
+import { TasksContext } from './TaskProvider';
+
+function App() {
+  const {
+    toggleSortOrder,
+    addTask,
+    deleteTask,
+    completeTask,
+    completedTasks,
+    activeTasks,
+    setSortType,
+    setSortOrder,
+  } = useContext(TasksContext);
+  const [isActiveFirstPlus, setIsActiveFirstPlus] = useState(false);
+  const [isActiveSecondPlus, setIsActiveSecondPlus] = useState(false);
+  const [isActiveThirdPlus, setIsActiveThirdPlus] = useState(false);
+
+  return (
+    <div className="app">
+      <div className="task-container">
+        <h1>Task List with priority</h1>
+        <button
+          onClick={() => setIsActiveFirstPlus(!isActiveFirstPlus)}
+          className={`close-button ${isActiveFirstPlus && 'open'}`}
+        >
+          +
+        </button>
+        {isActiveFirstPlus && <TaskForm />}
+      </div>
+
+      <div className="task-container">
+        <h2>Tasks:</h2>
+        <button
+          onClick={() => setIsActiveSecondPlus(!isActiveSecondPlus)}
+          className={`close-button ${isActiveSecondPlus && 'open'}`}
+        >
+          +
+        </button>
+        <div className="sort-controls">
+          <button
+            className={`sort-button ${sortType === 'date' && 'active'}`}
+            onClick={() => toggleSortOrder('date')}
+          >
+            By Date{' '}
+            {sortType === 'date' && (sortOrder === 'asc' ? '\u2191' : '\u2193')}
+          </button>
+          <button
+            className={`sort-button ${sortType === 'priority' && 'active'}`}
+            onClick={() => toggleSortOrder('priority')}
+          >
+            By Priority{' '}
+            {sortType === 'priority' &&
+              (sortOrder === 'asc' ? '\u2191' : '\u2193')}
+          </button>
+        </div>
+        {isActiveSecondPlus && <TaskList />}
+      </div>
+
+      <div className="completed-task-container">
+        <h3>Completed Tasks</h3>
+        <button
+          onClick={() => setIsActiveThirdPlus(!isActiveThirdPlus)}
+          className={`close-button ${isActiveThirdPlus && 'open'}`}
+        >
+          +
+        </button>
+        {isActiveThirdPlus && <CompletedTaskList />}
+      </div>
+
+      <Footer />
+    </div>
+  );
+}
+
+export default App;
+CompletedTaskList.jsxfunction CompletedTaskList() {
+  const { completedTasks, deleteTask } = useContext(TasksContext);
+  return (
+    <ul className="completed-task-list">
+      {completedTasks.map((task) => (
+        <TaskItem key={task.id} task={task} />
+      ))}
+    </ul>
+  );
+}export default CompletedTaskList;
+Footer.jsx
+function Footer() {
+  return (
+    <footer className="footer">
+      <p>
+        Technologies and React concepts used: React, JSX, props, useState,
+        component composition, conditional rendering, array methods (map,
+        filter), event handling.
+      </p>
+    </footer>
+  );
+}export default Footer;main.jsximport { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import './index.css';
+import App from './App.jsx';
+import TaskProvider from './TaskProvider.jsx';
+
+createRoot(document.getElementById('root')).render(
+  <StrictMode>
+    <TaskProvider>
+      <App />
+    </TaskProvider>
+  </StrictMode>,
+);
+TaskForm.jsx import { useContext, useState } from "react";
+import { TasksContext } from "./TaskProvider";
+
+function TaskForm() {
+  const { addTask } = useContext(TasksContext);
+  const [title, setTitle] = useState('');
+  const [priority, setPriority] = useState('Low');
+  const [deadline, setDeadline] = useState('');
+  function handleSubmit(e) {
+    e.preventDefault();
+    if (title.trim() && deadline) {
+      addTask({ title, priority, deadline });
+      setTitle('');
+      setPriority('Low');
+      setDeadline('');
+    }
+  }
+
+  return (
+    <form action="" className="task-form" onSubmit={handleSubmit}>
+      <input
+        type="text"
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        placeholder="Your task..."
+        required
+      />
+      <select value={priority} onChange={(e) => setPriority(e.target.value)}>
+        <option value={'High'}>High</option>
+        <option value={'Medium'}>Medium</option>
+        <option value={'Low'}>Low</option>
+      </select>
+
+      <input
+        type="datetime-local"
+        required
+        value={deadline}
+        onChange={(e) => setDeadline(e.target.value)}
+      />
+      <button type="submit">Add task</button>
+    </form>
+  );
+}export default TaskForm;TaskItem.jsxfunction TaskItem({ task }) {
+  const { title, priority, deadline, id, completed } = task;
+  const { deleteTask, completeTask } = useContext(TasksContext);
+
+  return (
+    <li
+      className={`task-item ${(priority === 'Low' && 'low') || (priority === 'Medium' && 'medium') || (priority === 'High' && 'high')}`}
+    >
+      <div className="task-info">
+        <div>
+          {title} <strong> {priority}</strong>{' '}
+        </div>
+        <div className="task-deadline">Due: {deadline}</div>
+      </div>
+      <div className="task-buttons">
+        {completed === false && (
+          <button className="complete-button" onClick={() => completeTask(id)}>
+            Complete
+          </button>
+        )}
+
+        <button className="delete-button" onClick={() => deleteTask(id)}>
+          Delete
+        </button>
+      </div>
+    </li>
+  );
+}
+export default TaskItem;
+TaskList.jsx import { useContext } from "react";
+import { TasksContext } from "./TaskProvider";
+
+
+function TaskList() {
+  const { activeTasks, deleteTask, completeTask } = useContext(TasksContext);
+  return (
+    <ul className="task-list">
+      {activeTasks.map((task) => (
+        <TaskItem key={task.id} task={task} />
+      ))}
+    </ul>
+  );
+}export default TaskList;TaskProvider.jsx import { createContext, useState } from 'react';
+export const TasksContext = createContext();
+function TaskProvider({ children }) {
+  const [tasks, setTasks] = useState([]);
+const [sortType, setSortType] = useState('date');
+  const [sortOrder, setSortOrder] = useState('asc');
+  function addTask(task) {
+    setTasks([...tasks, { ...task, completed: false, id: Date.now() }]);
+  }
+
+  function deleteTask(id) {
+    setTasks((tasks) => tasks.filter((task) => task.id !== id));
+  }
+  function completeTask(id) {
+    setTasks(
+      tasks.map((task) =>
+        task.id === id ? { ...task, completed: true } : task,
+      ),
+    );
+  }
+
+
+  function toggleSortOrder(type) {
+    if (sortType === type) {
+      setSortOrder((sortOrder) => (sortOrder === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortType(type);
+      setSortOrder('asc');
+    }
+  }
+
+  function sortTask(tasks) {
+    return tasks.slice().sort((a, b) => {
+      if (sortType === 'priority') {
+        const priorityOrder = { High: 1, Medium: 2, Low: 3 };
+        return sortOrder === 'asc'
+          ? priorityOrder[a.priority] - priorityOrder[b.priority]
+          : priorityOrder[b.priority] - priorityOrder[a.priority];
+      } else {
+        return sortOrder === 'asc'
+          ? new Date(a.deadline) - new Date(b.deadline)
+          : new Date(b.deadline) - new Date(a.deadline);
+      }
+    });
+  }
+  const completedTasks = tasks.filter((t) => t.completed);
+  const activeTasks = sortTask(tasks.filter((t) => !t.completed));
+  return (
+    <div>
+      <TasksContext.Provider
+        value={{
+          toggleSortOrder,
+          addTask,
+          deleteTask,
+          completeTask,
+          completedTasks,
+          activeTasks,
+          setSortType,
+      setSortOrder
+        }}
+      >
+        {children}
+      </TasksContext.Provider>
+    </div>
+  );
+}
+
+export default TaskProvider;
